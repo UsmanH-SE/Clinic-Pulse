@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
-import { Activity, Eye, EyeOff, Mail, Lock, ArrowRight, Shield, Clock, BarChart3 } from 'lucide-react';
+import { Activity, Eye, EyeOff, Mail, Lock, ArrowRight, Shield, Clock, BarChart3, Zap } from 'lucide-react';
 
 const features = [
   { icon: Shield, text: 'Secure patient records with role-based access' },
@@ -14,8 +14,14 @@ export default function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, demoLogin } = useAuth();
   const navigate = useNavigate();
+
+  const handleDemoLogin = (role) => {
+    demoLogin(role);
+    toast.success(`Logged in as ${role === 'admin' ? 'Admin (Dr. Ayesha)' : 'Receptionist (Sara)'}`);
+    navigate('/');
+  };
 
   const handleChange = e => setForm(p => ({ ...p, [e.target.name]: e.target.value }));
 
@@ -170,13 +176,32 @@ export default function LoginPage() {
           </form>
 
           {/* Divider */}
-          <div className="relative my-6">
+          <div className="relative my-5">
             <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200" /></div>
-            <div className="relative flex justify-center text-xs text-slate-400 bg-white px-3"><span>or</span></div>
+            <div className="relative flex justify-center text-xs text-slate-400 bg-white px-3"><span>Quick Demo Access</span></div>
+          </div>
+
+          {/* Demo login buttons */}
+          <div className="rounded-xl border-2 border-dashed border-amber-200 bg-amber-50 p-4 space-y-3">
+            <div className="flex items-center gap-2 mb-1">
+              <Zap className="h-4 w-4 text-amber-600" />
+              <p className="text-xs font-bold text-amber-800 uppercase tracking-wide">Preview Mode — No backend needed</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button type="button" onClick={() => handleDemoLogin('admin')}
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-teal-600 py-2.5 text-xs font-bold text-white hover:bg-teal-700 transition-colors">
+                ⚡ Admin Demo
+              </button>
+              <button type="button" onClick={() => handleDemoLogin('receptionist')}
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-indigo-600 py-2.5 text-xs font-bold text-white hover:bg-indigo-700 transition-colors">
+                🖥 Receptionist Demo
+              </button>
+            </div>
+            <p className="text-[10px] text-amber-700 text-center">These buttons will be removed once backend is connected</p>
           </div>
 
           {/* Patient portal link */}
-          <div className="rounded-xl border border-teal-100 bg-teal-50 p-4 text-center">
+          <div className="mt-4 rounded-xl border border-teal-100 bg-teal-50 p-4 text-center">
             <p className="text-sm text-slate-600 font-medium">Are you a patient?</p>
             <a href="/book" className="mt-1 inline-flex items-center gap-1.5 text-sm font-bold text-teal-700 hover:text-teal-800 transition-colors">
               Book an appointment <ArrowRight className="h-3.5 w-3.5" />
