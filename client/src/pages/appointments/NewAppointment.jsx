@@ -1,50 +1,87 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/common/Layout';
-import { CalendarDays, Clock, User, Phone, Search, ChevronLeft, CheckCircle2 } from 'lucide-react';
+import { getSlotsAPI, bookAppointmentAPI } from '../../services/appointmentService';
+import { getPatients } from '../../services/patientService';
 import toast from 'react-hot-toast';
-
-const doctors = [
-  { id: 1, name: 'Dr. Ayesha Siddiqui', specialty: 'Eye Specialist',    available: true },
-  { id: 2, name: 'Dr. Imran Malik',      specialty: 'General Physician', available: true },
-  { id: 3, name: 'Dr. Raza Ahmed',       specialty: 'Eye Specialist',    available: false },
-];
-
-const timeSlots = [
-  '09:00 AM','09:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM',
-  '02:00 PM','02:30 PM','03:00 PM','03:30 PM','04:00 PM','04:30 PM',
-];
-const bookedSlots = ['09:00 AM', '10:30 AM', '03:00 PM'];
+import { CalendarDays, Clock, Search, ChevronLeft, CheckCircle2, User, Phone } from 'lucide-react';
 
 export default function NewAppointment() {
   const navigate = useNavigate();
-  const [step, setStep] = useState(1);
-  const [form, setForm] = useState({ patientSearch: '', patientName: '', patientPhone: '', doctorId: '', date: '', timeSlot: '', notes: '' });
-  const [isNewPatient, setIsNewPatient] = useState(false);
-
+  const [step, setStep]               = useState(1);
+  const [patients, setPatients]       = useState([]);
+  const [patSearch, setPatSearch]     = useState('');
+  const [selectedPat, setSelectedPat] = useState(null);
+  const [slots, setSlots]             = useState({ all: [], available: [] });
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [submitting, setSubmitting]   = useState(false);
+  const [form, setForm] = useState({ date: '', timeSlot: '', notes: '' });
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
-  const handleSubmit = () => {
-    toast.success('Appointment booked! WhatsApp confirmation sent.');
-    navigate('/appointments');
-  };
+  // Fetch patients for search
+  useEffect(() => {
+    const fetchPatients = async () => {
+      try {
+        const { data } = await getPatients({ search: patSearch });
+        setPatients(data.patients || []);
+      } catch { /* silent */ }
+    };
+    fetchPatients();
+  }, [patSearch]);
 
-  const selectedDoctor = doctors.find(d => d.id === Number(form.doctorId));
+  // Fetch slots when date changes
+  useEffect(() => {
+    if (!form.date) return;
+    const fetchSlots = async () => {
+      setLoadingSlots(true);
+      set('timeSlot', '');
+      try {
+        const { data } = await getSlotsAPI(form.date);
+        setSlots({ all: data.allSlots || [], available: data.available || [] });
+      } catch {
+        toast.error('Could not load slots');
+      } finally {
+        setLoadingSlots(false);
+      }
+    };
+    fetchSlots();
+  }, [form.date]);
+
+  const handleSubmit = async () => {
+    if (!selectedPat || !form.date || !form.timeSlot) {
+      toast.error('Please complete all required fields');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await bookAppointmentAPI({
+        patientId:  selectedPat._id,
+        date:       form.date,
+        timeSlot:   form.timeSlot,
+        notes:      form.notes,
+        createdBy:  'receptionist',
+      });
+      toast.success('Appointment booked! WhatsApp confirmation sent.');
+      navigate('/appointments');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Booking failed');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <Layout title="New Appointment" subtitle="Book a new appointment for a patient">
 
-      {/* Back */}
-      <button onClick={() => navigate(-1)} className="mb-6 flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors">
-        <ChevronLeft className="h-4 w-4" /> Back to Appointments
+      <button onClick={() => navigate(-1)}
+        className="mb-6 flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors">
+        <ChevronLeft className="h-4 w-4" /> Back
       </button>
 
       {/* Step indicator */}
       <div className="mb-8 flex items-center gap-0">
-        {['Patient', 'Doctor & Slot', 'Confirm'].map((label, i) => {
-          const n = i + 1;
-          const done = step > n;
-          const active = step === n;
+        {['Select Patient', 'Date & Slot', 'Confirm'].map((label, i) => {
+          const n = i + 1; const done = step > n; const active = step === n;
           return (
             <div key={label} className="flex items-center">
               <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all ${
@@ -59,174 +96,183 @@ export default function NewAppointment() {
         })}
       </div>
 
-      <div className="max-w-2xl">
+      <div className="max-w-2xl space-y-5">
 
-        {/* STEP 1 — Patient */}
+        {/* ── STEP 1: Select Patient ── */}
         {step === 1 && (
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
-            <h2 className="text-base font-bold text-slate-900">Select Patient</h2>
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+            <h2 className="text-base font-bold text-slate-900">Search Patient</h2>
 
-            {/* Search existing */}
+            <div className="relative">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input value={patSearch} onChange={e => setPatSearch(e.target.value)}
+                placeholder="Type name or phone number…"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm outline-none focus:border-teal-500 focus:ring-3 focus:ring-teal-500/10 transition" />
+            </div>
+
+            {/* Patient results */}
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {patients.length === 0 && patSearch && (
+                <div className="py-6 text-center text-sm text-slate-400">
+                  No patients found.{' '}
+                  <button onClick={() => navigate('/patients/add')} className="font-bold text-teal-600 hover:underline">
+                    Add new patient
+                  </button>
+                </div>
+              )}
+              {patients.map(p => (
+                <button key={p._id} onClick={() => setSelectedPat(p)}
+                  className={`w-full flex items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-all ${
+                    selectedPat?._id === p._id
+                      ? 'border-teal-500 bg-teal-50'
+                      : 'border-slate-200 hover:border-teal-200 hover:bg-slate-50'
+                  }`}>
+                  <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-teal-100 text-teal-700 text-xs font-bold">
+                    {p.name.split(' ').map(n => n[0]).join('')}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-slate-900">{p.name}</p>
+                    <p className="text-xs text-slate-500">{p.phone} · {p.age ? `${p.age} yrs` : ''} · {p.gender || ''}</p>
+                  </div>
+                  {selectedPat?._id === p._id && <CheckCircle2 className="h-5 w-5 text-teal-600 flex-shrink-0" />}
+                </button>
+              ))}
+            </div>
+
+            {selectedPat && (
+              <div className="rounded-xl bg-teal-50 border border-teal-200 px-4 py-3 flex items-center gap-3">
+                <CheckCircle2 className="h-5 w-5 text-teal-600 flex-shrink-0" />
+                <p className="text-sm font-semibold text-teal-800">
+                  Selected: <span className="font-black">{selectedPat.name}</span> ({selectedPat.phone})
+                </p>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button onClick={() => navigate('/patients/add')}
+                className="flex-1 rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
+                + New Patient
+              </button>
+              <button onClick={() => { if (!selectedPat) { toast.error('Please select a patient'); return; } setStep(2); }}
+                className="flex-1 rounded-xl bg-teal-600 py-3 text-sm font-bold text-white hover:bg-teal-700 transition-colors">
+                Continue →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── STEP 2: Date & Slot ── */}
+        {step === 2 && (
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
+            <h2 className="text-base font-bold text-slate-900">Select Date & Time</h2>
+
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Search existing patient</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Appointment Date <span className="text-red-500">*</span></label>
               <div className="relative">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <input value={form.patientSearch} onChange={e => set('patientSearch', e.target.value)}
-                  placeholder="Search by name or phone number…"
+                <CalendarDays className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input type="date" value={form.date}
+                  min={new Date().toISOString().split('T')[0]}
+                  onChange={e => set('date', e.target.value)}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm outline-none focus:border-teal-500 focus:ring-3 focus:ring-teal-500/10 transition" />
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-slate-200" />
-              <span className="text-xs font-medium text-slate-400">or</span>
-              <div className="flex-1 h-px bg-slate-200" />
-            </div>
-
-            {/* New patient toggle */}
-            <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-slate-300 p-4 hover:border-teal-400 hover:bg-teal-50 transition-colors">
-              <input type="checkbox" checked={isNewPatient} onChange={e => setIsNewPatient(e.target.checked)} className="h-4 w-4 accent-teal-600" />
+            {form.date && (
               <div>
-                <p className="text-sm font-semibold text-slate-800">Add new patient</p>
-                <p className="text-xs text-slate-500">Register a new patient on the spot</p>
-              </div>
-            </label>
-
-            {isNewPatient && (
-              <div className="space-y-4 rounded-xl bg-slate-50 p-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">Full Name *</label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-                      <input value={form.patientName} onChange={e => set('patientName', e.target.value)}
-                        placeholder="Ahmed Khan"
-                        className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/10 transition" />
-                    </div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Available Time Slots
+                  {loadingSlots && <span className="ml-2 text-xs font-normal text-slate-400">Loading…</span>}
+                </label>
+                {loadingSlots ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="h-6 w-6 rounded-full border-2 border-teal-500/30 border-t-teal-500 animate-spin" />
                   </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">Phone *</label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-                      <input value={form.patientPhone} onChange={e => set('patientPhone', e.target.value)}
-                        placeholder="+92 300 1234567"
-                        className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/10 transition" />
-                    </div>
+                ) : slots.all.length === 0 ? (
+                  <p className="text-sm text-slate-400 py-4 text-center">No slots configured. Ask admin to set working hours.</p>
+                ) : (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                    {slots.all.map(slot => {
+                      const isBooked   = !slots.available.includes(slot);
+                      const isSelected = form.timeSlot === slot;
+                      return (
+                        <button key={slot} disabled={isBooked}
+                          onClick={() => set('timeSlot', slot)}
+                          className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-semibold transition-all ${
+                            isSelected ? 'bg-teal-600 text-white shadow-sm' :
+                            isBooked   ? 'bg-slate-100 text-slate-400 cursor-not-allowed line-through' :
+                                         'border border-slate-200 bg-white text-slate-700 hover:border-teal-400 hover:bg-teal-50'
+                          }`}>
+                          <Clock className="h-3 w-3" />
+                          {slot}
+                        </button>
+                      );
+                    })}
                   </div>
-                </div>
+                )}
+                <p className="mt-2 text-xs text-slate-400">
+                  {slots.available.length} of {slots.all.length} slots available
+                </p>
               </div>
             )}
 
-            <button onClick={() => setStep(2)}
-              className="w-full rounded-xl bg-teal-600 py-3 text-sm font-bold text-white hover:bg-teal-700 transition-colors">
-              Continue →
-            </button>
-          </div>
-        )}
-
-        {/* STEP 2 — Doctor & Slot */}
-        {step === 2 && (
-          <div className="space-y-5">
-            {/* Doctor */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-              <h2 className="text-base font-bold text-slate-900">Select Doctor</h2>
-              <div className="grid grid-cols-1 gap-3">
-                {doctors.map(d => (
-                  <label key={d.id} className={`flex cursor-pointer items-center gap-4 rounded-xl border-2 p-4 transition-all ${
-                    Number(form.doctorId) === d.id ? 'border-teal-500 bg-teal-50' : 'border-slate-200 hover:border-teal-200 hover:bg-slate-50'
-                  } ${!d.available ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                    <input type="radio" name="doctor" value={d.id} disabled={!d.available}
-                      checked={Number(form.doctorId) === d.id}
-                      onChange={() => set('doctorId', String(d.id))}
-                      className="h-4 w-4 accent-teal-600" />
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-100 text-teal-700 font-bold text-sm">
-                      {d.name.split(' ').slice(1).map(n => n[0]).join('')}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-bold text-slate-900">{d.name}</p>
-                      <p className="text-xs text-slate-500">{d.specialty}</p>
-                    </div>
-                    <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${d.available ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}`}>
-                      {d.available ? 'Available' : 'Unavailable'}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Date & Slots */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-              <h2 className="text-base font-bold text-slate-900">Select Date & Time</h2>
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Appointment Date</label>
-                <div className="relative">
-                  <CalendarDays className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <input type="date" value={form.date} min={new Date().toISOString().split('T')[0]}
-                    onChange={e => set('date', e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm outline-none focus:border-teal-500 focus:ring-3 focus:ring-teal-500/10 transition" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Available Slots</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {timeSlots.map(slot => {
-                    const booked = bookedSlots.includes(slot);
-                    const selected = form.timeSlot === slot;
-                    return (
-                      <button key={slot} disabled={booked} onClick={() => set('timeSlot', slot)}
-                        className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-semibold transition-all ${
-                          selected ? 'bg-teal-600 text-white shadow-sm' :
-                          booked   ? 'bg-slate-100 text-slate-400 cursor-not-allowed line-through' :
-                                     'border border-slate-200 bg-white text-slate-700 hover:border-teal-400 hover:bg-teal-50'
-                        }`}>
-                        <Clock className="h-3 w-3" />
-                        {slot}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Notes (optional)</label>
-                <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={3}
-                  placeholder="Add any relevant notes about the appointment…"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-teal-500 focus:ring-3 focus:ring-teal-500/10 transition resize-none" />
-              </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Notes (optional)</label>
+              <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={3}
+                placeholder="Reason for visit, symptoms, doctor instructions…"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-teal-500 focus:ring-3 focus:ring-teal-500/10 transition resize-none" />
             </div>
 
             <div className="flex gap-3">
-              <button onClick={() => setStep(1)} className="flex-1 rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">← Back</button>
-              <button onClick={() => setStep(3)} className="flex-1 rounded-xl bg-teal-600 py-3 text-sm font-bold text-white hover:bg-teal-700 transition-colors">Review →</button>
+              <button onClick={() => setStep(1)}
+                className="flex-1 rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
+                ← Back
+              </button>
+              <button onClick={() => { if (!form.date || !form.timeSlot) { toast.error('Select date and time'); return; } setStep(3); }}
+                className="flex-1 rounded-xl bg-teal-600 py-3 text-sm font-bold text-white hover:bg-teal-700 transition-colors">
+                Review →
+              </button>
             </div>
           </div>
         )}
 
-        {/* STEP 3 — Confirm */}
+        {/* ── STEP 3: Confirm ── */}
         {step === 3 && (
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
             <h2 className="text-base font-bold text-slate-900">Confirm Appointment</h2>
+
             <div className="space-y-3 rounded-xl bg-slate-50 p-5">
               {[
-                ['Patient',   isNewPatient ? form.patientName || '—' : 'Existing Patient'],
-                ['Doctor',    selectedDoctor?.name || '—'],
-                ['Specialty', selectedDoctor?.specialty || '—'],
-                ['Date',      form.date || '—'],
-                ['Time',      form.timeSlot || '—'],
-                ['Notes',     form.notes || 'None'],
+                ['Patient', selectedPat?.name],
+                ['Phone',   selectedPat?.phone],
+                ['Date',    form.date],
+                ['Time',    form.timeSlot],
+                ['Notes',   form.notes || 'None'],
               ].map(([label, val]) => (
-                <div key={label} className="flex items-start justify-between">
-                  <span className="text-sm font-medium text-slate-500 w-24">{label}</span>
+                <div key={label} className="flex items-start justify-between border-b border-slate-200 pb-2 last:border-0 last:pb-0">
+                  <span className="text-sm font-medium text-slate-500 w-20">{label}</span>
                   <span className="text-sm font-semibold text-slate-900 text-right flex-1">{val}</span>
                 </div>
               ))}
             </div>
+
             <div className="rounded-xl bg-teal-50 border border-teal-200 px-4 py-3 flex items-start gap-3">
               <CheckCircle2 className="h-5 w-5 text-teal-600 mt-0.5 flex-shrink-0" />
-              <p className="text-sm text-teal-800 font-medium">A WhatsApp confirmation message will be automatically sent to the patient.</p>
+              <p className="text-sm text-teal-800 font-medium">
+                WhatsApp confirmation will be sent to <span className="font-black">{selectedPat?.phone}</span>
+              </p>
             </div>
+
             <div className="flex gap-3">
-              <button onClick={() => setStep(2)} className="flex-1 rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">← Edit</button>
-              <button onClick={handleSubmit} className="flex-1 rounded-xl bg-teal-600 py-3 text-sm font-bold text-white hover:bg-teal-700 transition-colors">✓ Confirm Booking</button>
+              <button onClick={() => setStep(2)}
+                className="flex-1 rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
+                ← Edit
+              </button>
+              <button onClick={handleSubmit} disabled={submitting}
+                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-teal-600 py-3 text-sm font-bold text-white hover:bg-teal-700 disabled:opacity-60 transition-colors">
+                {submitting ? (
+                  <><span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Booking…</>
+                ) : '✓ Confirm Booking'}
+              </button>
             </div>
           </div>
         )}

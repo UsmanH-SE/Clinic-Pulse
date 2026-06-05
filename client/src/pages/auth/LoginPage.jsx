@@ -181,12 +181,26 @@ export default function LoginPage() {
             <div className="relative flex justify-center text-xs text-slate-400 bg-white px-3"><span>Quick Demo Access</span></div>
           </div>
 
-          {/* Demo login buttons */}
+          {/* Demo + Real credentials panel */}
           <div className="rounded-xl border-2 border-dashed border-amber-200 bg-amber-50 p-4 space-y-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Zap className="h-4 w-4 text-amber-600" />
-              <p className="text-xs font-bold text-amber-800 uppercase tracking-wide">Preview Mode — No backend needed</p>
+            <div className="flex items-center gap-2">
+              <Zap className="h-4 w-4 text-amber-600 flex-shrink-0" />
+              <p className="text-xs font-bold text-amber-800 uppercase tracking-wide">Quick Access</p>
             </div>
+
+            {/* Real backend credentials */}
+            <div className="rounded-lg bg-white border border-amber-200 px-3 py-2.5 space-y-1.5">
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Real Backend (MongoDB)</p>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-600">Admin:</span>
+                <button type="button" onClick={() => setForm({ email: 'admin@visionclinic.com', password: 'admin123' })}
+                  className="text-[11px] font-mono font-semibold text-teal-700 hover:text-teal-900 bg-teal-50 rounded px-2 py-0.5 transition-colors">
+                  admin@visionclinic.com / admin123
+                </button>
+              </div>
+            </div>
+
+            {/* Demo buttons (no backend) */}
             <div className="grid grid-cols-2 gap-2">
               <button type="button" onClick={() => handleDemoLogin('admin')}
                 className="flex items-center justify-center gap-1.5 rounded-xl bg-teal-600 py-2.5 text-xs font-bold text-white hover:bg-teal-700 transition-colors">
@@ -197,7 +211,7 @@ export default function LoginPage() {
                 🖥 Receptionist Demo
               </button>
             </div>
-            <p className="text-[10px] text-amber-700 text-center">These buttons will be removed once backend is connected</p>
+            <p className="text-[10px] text-amber-700 text-center">Demo buttons = no backend needed · Real login needs server running</p>
           </div>
 
           {/* Patient portal link */}
