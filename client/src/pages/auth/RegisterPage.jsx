@@ -15,28 +15,37 @@ const specialties = [
   { value: 'other',  label: 'Other' },
 ];
 
+const inputCls = "w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder-slate-400 transition-all focus:border-teal-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20";
+
 export default function RegisterPage() {
   const navigate  = useNavigate();
   const [showPw, setShowPw]   = useState(false);
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({
-    clinicName: '', clinicAddress: '', clinicPhone: '', specialty: 'gp',
-    name: '', email: '', password: '',
-  });
-  const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  // Each field has its own state — no wrapper component, no shared object
+  const [clinicName,    setClinicName]    = useState('');
+  const [clinicPhone,   setClinicPhone]   = useState('');
+  const [specialty,     setSpecialty]     = useState('gp');
+  const [clinicAddress, setClinicAddress] = useState('');
+  const [name,          setName]          = useState('');
+  const [email,         setEmail]         = useState('');
+  const [password,      setPassword]      = useState('');
 
   const handleSubmit = async e => {
     e.preventDefault();
-    const { clinicName, clinicAddress, clinicPhone, name, email, password } = form;
-    if (!clinicName || !clinicAddress || !clinicPhone || !name || !email || !password) {
+    if (!clinicName || !clinicPhone || !clinicAddress || !name || !email || !password) {
       toast.error('Please fill all required fields');
       return;
     }
-    if (password.length < 6) { toast.error('Password must be at least 6 characters'); return; }
-
+    if (password.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
     setLoading(true);
     try {
-      const { data } = await registerAPI(form);
+      const { data } = await registerAPI({
+        clinicName, clinicPhone, specialty, clinicAddress, name, email, password,
+      });
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       toast.success(`Clinic registered! Welcome, ${data.user.name} 🎉`);
@@ -47,15 +56,6 @@ export default function RegisterPage() {
       setLoading(false);
     }
   };
-
-  const Field = ({ label, required, children }) => (
-    <div>
-      <label className="block text-sm font-semibold text-slate-700 mb-2">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      {children}
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-4" style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -73,21 +73,6 @@ export default function RegisterPage() {
           <p className="text-sm text-slate-500 mt-2">Set up your account in under 2 minutes</p>
         </div>
 
-        {/* Progress indicator */}
-        <div className="flex items-center justify-center gap-2 mb-8">
-          {['Clinic Info', 'Your Account'].map((label, i) => (
-            <div key={label} className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5">
-                <div className="h-6 w-6 rounded-full bg-teal-600 flex items-center justify-center">
-                  <span className="text-[10px] font-bold text-white">{i + 1}</span>
-                </div>
-                <span className="text-xs font-semibold text-slate-600">{label}</span>
-              </div>
-              {i < 1 && <div className="w-8 h-px bg-slate-300 mx-1" />}
-            </div>
-          ))}
-        </div>
-
         <form onSubmit={handleSubmit} className="space-y-5">
 
           {/* ── Section 1: Clinic Info ── */}
@@ -103,34 +88,61 @@ export default function RegisterPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
               <div className="sm:col-span-2">
-                <Field label="Clinic Name" required>
-                  <input value={form.clinicName} onChange={e => set('clinicName', e.target.value)}
-                    placeholder="e.g. Vision Care Clinic"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm transition-all focus:border-teal-500 focus:bg-white focus:ring-3 focus:ring-teal-500/10" />
-                </Field>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Clinic Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={clinicName}
+                  onChange={e => setClinicName(e.target.value)}
+                  placeholder="e.g. Vision Care Clinic"
+                  className={inputCls}
+                />
               </div>
 
-              <Field label="Clinic Phone" required>
-                <input value={form.clinicPhone} onChange={e => set('clinicPhone', e.target.value)}
-                  placeholder="+92 300 1234567"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm transition-all focus:border-teal-500 focus:bg-white focus:ring-3 focus:ring-teal-500/10" />
-              </Field>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Clinic Phone <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={clinicPhone}
+                  onChange={e => setClinicPhone(e.target.value)}
+                  placeholder="03XX XXXXXXX"
+                  className={inputCls}
+                />
+              </div>
 
-              <Field label="Specialty" required>
-                <select value={form.specialty} onChange={e => set('specialty', e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm transition-all focus:border-teal-500 focus:bg-white focus:ring-3 focus:ring-teal-500/10">
-                  {specialties.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Specialty <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={specialty}
+                  onChange={e => setSpecialty(e.target.value)}
+                  className={inputCls}
+                >
+                  {specialties.map(s => (
+                    <option key={s.value} value={s.value}>{s.label}</option>
+                  ))}
                 </select>
-              </Field>
+              </div>
 
               <div className="sm:col-span-2">
-                <Field label="Clinic Address" required>
-                  <textarea value={form.clinicAddress} onChange={e => set('clinicAddress', e.target.value)}
-                    rows={2} placeholder="e.g. Shop 5, F-7 Markaz, Islamabad"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm resize-none transition-all focus:border-teal-500 focus:bg-white focus:ring-3 focus:ring-teal-500/10" />
-                </Field>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Clinic Address <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={clinicAddress}
+                  onChange={e => setClinicAddress(e.target.value)}
+                  rows={2}
+                  placeholder="e.g. Shop 5, F-7 Markaz, Islamabad"
+                  className={`${inputCls} resize-none`}
+                />
               </div>
+
             </div>
           </div>
 
@@ -147,39 +159,70 @@ export default function RegisterPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
               <div className="sm:col-span-2">
-                <Field label="Your Full Name" required>
-                  <input value={form.name} onChange={e => set('name', e.target.value)}
-                    placeholder="e.g. Dr. Ahmed Ali"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm transition-all focus:border-teal-500 focus:bg-white focus:ring-3 focus:ring-teal-500/10" />
-                </Field>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Your Full Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  placeholder="e.g. Dr. Ahmed Ali"
+                  className={inputCls}
+                />
               </div>
 
-              <Field label="Email Address" required>
-                <input type="email" value={form.email} onChange={e => set('email', e.target.value)}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Email Address <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
                   placeholder="doctor@clinic.com"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm transition-all focus:border-teal-500 focus:bg-white focus:ring-3 focus:ring-teal-500/10" />
-              </Field>
+                  className={inputCls}
+                />
+              </div>
 
-              <Field label="Password" required>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Password <span className="text-red-500">*</span>
+                </label>
                 <div className="relative">
-                  <input type={showPw ? 'text' : 'password'} value={form.password} onChange={e => set('password', e.target.value)}
+                  <input
+                    type={showPw ? 'text' : 'password'}
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
                     placeholder="Min 6 characters"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 pr-11 text-sm transition-all focus:border-teal-500 focus:bg-white focus:ring-3 focus:ring-teal-500/10" />
-                  <button type="button" onClick={() => setShowPw(p => !p)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                    className={`${inputCls} pr-11`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw(p => !p)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
                     {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-              </Field>
+              </div>
+
             </div>
           </div>
 
-          {/* What you get */}
+          {/* Features */}
           <div className="bg-teal-50 rounded-2xl border border-teal-100 p-5">
             <p className="text-xs font-bold text-teal-800 mb-3">After registering you can immediately:</p>
             <div className="grid grid-cols-2 gap-2">
-              {['Add & manage patients', 'Book appointments', 'Add receptionist staff', 'Track billing & revenue', 'Send WhatsApp reminders', 'View clinic analytics'].map(f => (
+              {[
+                'Add & manage patients',
+                'Book appointments',
+                'Add receptionist staff',
+                'Track billing & revenue',
+                'Send WhatsApp reminders',
+                'View clinic analytics',
+              ].map(f => (
                 <div key={f} className="flex items-center gap-2">
                   <CheckCircle2 className="h-3.5 w-3.5 text-teal-600 flex-shrink-0" />
                   <span className="text-xs text-teal-800">{f}</span>
@@ -189,17 +232,26 @@ export default function RegisterPage() {
           </div>
 
           {/* Submit */}
-          <button type="submit" disabled={loading}
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-teal-600 py-4 text-sm font-bold text-white shadow-sm hover:bg-teal-700 active:scale-[0.98] disabled:opacity-60 transition-all duration-150">
-            {loading
-              ? <><span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Creating your clinic…</>
-              : 'Register & Enter Dashboard →'}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2 rounded-xl bg-teal-600 py-4 text-sm font-bold text-white shadow-sm hover:bg-teal-700 active:scale-[0.98] disabled:opacity-60 transition-all duration-150"
+          >
+            {loading ? (
+              <>
+                <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                Creating your clinic…
+              </>
+            ) : (
+              'Register & Enter Dashboard →'
+            )}
           </button>
 
           <p className="text-center text-sm text-slate-500">
             Already have an account?{' '}
             <Link to="/login" className="font-bold text-teal-600 hover:text-teal-700">Sign in</Link>
           </p>
+
         </form>
       </div>
     </div>
