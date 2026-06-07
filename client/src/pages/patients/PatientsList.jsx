@@ -1,113 +1,123 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/common/Layout';
-import { Search, Plus, Phone, Calendar, Eye, MoreHorizontal, Users } from 'lucide-react';
-
-const patients = [
-  { id: 1, name: 'Ahmed Khan',      phone: '+92 300 1234567', age: 34, gender: 'Male',   visits: 4, lastVisit: '2025-06-05', condition: 'Glaucoma' },
-  { id: 2, name: 'Sara Malik',      phone: '+92 312 9876543', age: 28, gender: 'Female', visits: 2, lastVisit: '2025-06-05', condition: 'Myopia' },
-  { id: 3, name: 'Bilal Hussain',   phone: '+92 333 1122334', age: 45, gender: 'Male',   visits: 1, lastVisit: '2025-06-05', condition: 'New Patient' },
-  { id: 4, name: 'Fatima Rizvi',    phone: '+92 321 5556677', age: 52, gender: 'Female', visits: 7, lastVisit: '2025-06-04', condition: 'Diabetic Retinopathy' },
-  { id: 5, name: 'Usman Ali',       phone: '+92 345 9988776', age: 41, gender: 'Male',   visits: 3, lastVisit: '2025-06-03', condition: 'Cataract' },
-  { id: 6, name: 'Zara Siddiqui',   phone: '+92 301 6677889', age: 22, gender: 'Female', visits: 1, lastVisit: '2025-06-02', condition: 'Eye Allergy' },
-  { id: 7, name: 'Hassan Raza',     phone: '+92 311 4455667', age: 38, gender: 'Male',   visits: 5, lastVisit: '2025-05-30', condition: 'Hypertension' },
-  { id: 8, name: 'Nadia Sheikh',    phone: '+92 333 8899001', age: 60, gender: 'Female', visits: 9, lastVisit: '2025-05-28', condition: 'Glaucoma' },
-];
+import { getPatients } from '../../services/patientService';
+import { Search, Plus, Phone, Calendar, Eye, Users, RefreshCw } from 'lucide-react';
 
 export default function PatientsList() {
-  const [search, setSearch] = useState('');
   const navigate = useNavigate();
+  const [patients, setPatients] = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [search, setSearch]     = useState('');
+  const [total, setTotal]       = useState(0);
 
-  const filtered = patients.filter(p =>
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.phone.includes(search) || p.condition.toLowerCase().includes(search.toLowerCase())
-  );
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await getPatients({ search, limit: 50 });
+      setPatients(data.patients || []);
+      setTotal(data.total || 0);
+    } catch { setPatients([]); }
+    finally { setLoading(false); }
+  }, [search]);
+
+  useEffect(() => {
+    const t = setTimeout(load, 300);
+    return () => clearTimeout(t);
+  }, [load]);
+
+  const genderBadge = g => ({
+    Male:   'bg-blue-100 text-blue-700',
+    Female: 'bg-pink-100 text-pink-700',
+    Other:  'bg-slate-100 text-slate-600',
+  }[g] || 'bg-slate-100 text-slate-500');
 
   return (
-    <Layout title="Patients" subtitle="Manage patient records and medical history">
+    <Layout title="Patients" subtitle={`${total} patient${total !== 1 ? 's' : ''} registered`}>
 
-      {/* Top bar */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3 flex-1">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Search by name, phone, condition…"
-              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm placeholder-slate-400 outline-none transition focus:border-teal-500 focus:ring-3 focus:ring-teal-500/10 shadow-sm" />
-          </div>
+      {/* Toolbar */}
+      <div className="mb-5 flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Search by name or phone…"
+            className="w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-sm shadow-sm focus:border-teal-500 focus:ring-3 focus:ring-teal-500/10 transition-all" />
         </div>
+        <button onClick={load}
+          className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 shadow-sm transition-colors">
+          <RefreshCw className="h-4 w-4" />
+        </button>
         <button onClick={() => navigate('/patients/add')}
           className="flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-teal-700 transition-colors shadow-sm">
           <Plus className="h-4 w-4" /> Add Patient
         </button>
       </div>
 
-      {/* Stats */}
-      <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {[
-          { label: 'Total Patients', value: patients.length, color: 'text-teal-700', bg: 'bg-teal-50 border-teal-100' },
-          { label: 'This Month',     value: 3,              color: 'text-indigo-700',bg: 'bg-indigo-50 border-indigo-100' },
-          { label: 'Active',         value: 6,              color: 'text-emerald-700',bg: 'bg-emerald-50 border-emerald-100' },
-          { label: 'Follow-ups Due', value: 2,              color: 'text-amber-700', bg: 'bg-amber-50 border-amber-100' },
-        ].map(s => (
-          <div key={s.label} className={`rounded-2xl border p-4 ${s.bg}`}>
-            <p className={`text-2xl font-black ${s.color}`}>{s.value}</p>
-            <p className="text-xs font-medium text-slate-500 mt-1">{s.label}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Grid of patient cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {filtered.map(patient => (
-          <div key={patient.id} onClick={() => navigate(`/patients/${patient.id}`)}
-            className="cursor-pointer rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-teal-200 transition-all duration-200 group">
-            {/* Header */}
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-teal-100 text-teal-700 font-bold text-sm flex-shrink-0">
-                  {patient.name.split(' ').map(n => n[0]).join('')}
+      {/* Content */}
+      {loading ? (
+        <div className="flex items-center justify-center py-24 gap-2">
+          <div className="h-5 w-5 rounded-full border-2 border-teal-500/30 border-t-teal-500 animate-spin" />
+          <span className="text-sm text-slate-400">Loading patients…</span>
+        </div>
+      ) : patients.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm py-24 text-center">
+          <Users className="h-12 w-12 text-slate-200 mx-auto mb-3" />
+          <p className="text-sm font-semibold text-slate-400 mb-1">
+            {search ? 'No patients match your search' : 'No patients registered yet'}
+          </p>
+          <p className="text-xs text-slate-300 mb-4">Start by adding your first patient</p>
+          <button onClick={() => navigate('/patients/add')}
+            className="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-teal-700 transition-colors">
+            <Plus className="h-4 w-4" /> Add Patient
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          {patients.map(p => (
+            <div key={p._id}
+              className="group bg-white rounded-2xl border border-slate-200 shadow-sm p-5 hover:shadow-md hover:border-teal-200 transition-all cursor-pointer"
+              onClick={() => navigate(`/patients/${p._id}`)}>
+              {/* Header */}
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-teal-100 text-teal-700 text-sm font-bold flex items-center justify-center uppercase flex-shrink-0">
+                    {p.name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  </div>
+                  <div>
+                    <p className="font-bold text-slate-900 text-sm">{p.name}</p>
+                    <span className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${genderBadge(p.gender)}`}>
+                      {p.gender}
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-slate-900 group-hover:text-teal-700 transition-colors">{patient.name}</p>
-                  <p className="text-xs text-slate-500">{patient.age} yrs · {patient.gender}</p>
+                <Eye className="h-4 w-4 text-slate-300 group-hover:text-teal-500 transition-colors flex-shrink-0" />
+              </div>
+
+              {/* Details */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm text-slate-500">
+                  <Phone className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
+                  <span>{p.phone || '—'}</span>
                 </div>
+                {p.dateOfBirth && (
+                  <div className="flex items-center gap-2 text-sm text-slate-500">
+                    <Calendar className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
+                    <span>DOB: {new Date(p.dateOfBirth).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                  </div>
+                )}
               </div>
-              <button onClick={e => e.stopPropagation()} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 transition-colors">
-                <MoreHorizontal className="h-4 w-4" />
-              </button>
-            </div>
 
-            {/* Condition */}
-            <div className="mb-4">
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{patient.condition}</span>
-            </div>
-
-            {/* Details */}
-            <div className="space-y-2 border-t border-slate-100 pt-4">
-              <div className="flex items-center gap-2 text-xs text-slate-500">
-                <Phone className="h-3.5 w-3.5 text-slate-400" />
-                {patient.phone}
-              </div>
-              <div className="flex items-center gap-2 text-xs text-slate-500">
-                <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                Last visit: {patient.lastVisit}
-              </div>
-              <div className="flex items-center gap-2 text-xs text-slate-500">
-                <Eye className="h-3.5 w-3.5 text-slate-400" />
-                {patient.visits} total visits
+              {/* Footer */}
+              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                <span className="text-[11px] text-slate-400">
+                  Added {new Date(p.createdAt).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </span>
+                <span className="text-[11px] font-semibold text-teal-600 group-hover:underline">View profile →</span>
               </div>
             </div>
-          </div>
-        ))}
-
-        {filtered.length === 0 && (
-          <div className="col-span-3 rounded-2xl border border-dashed border-slate-300 bg-white py-16 text-center">
-            <Users className="h-10 w-10 text-slate-300 mx-auto mb-3" />
-            <p className="text-sm font-medium text-slate-400">No patients found</p>
-          </div>
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </Layout>
   );
 }

@@ -1,142 +1,210 @@
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/common/Layout';
-import { ChevronLeft, Phone, User, Calendar, Clock, Edit2, Plus, FileText, CreditCard } from 'lucide-react';
+import { getPatientHistory } from '../../services/patientService';
+import { ChevronLeft, Phone, User, Calendar, Clock, CalendarDays, Receipt, FileText, AlertCircle } from 'lucide-react';
 
-const patient = {
-  id: 1, name: 'Ahmed Khan', phone: '+92 300 1234567', age: 34, gender: 'Male',
-  medicalHistory: 'Glaucoma (diagnosed 2023), mild hypertension. Allergic to penicillin.',
-  createdAt: '2024-01-15',
+const statusStyle = {
+  completed: 'bg-emerald-100 text-emerald-700',
+  confirmed:  'bg-teal-100   text-teal-700',
+  scheduled:  'bg-blue-100   text-blue-600',
+  'no-show':  'bg-red-100    text-red-600',
+  cancelled:  'bg-slate-100  text-slate-500',
 };
-
-const visits = [
-  { id: 1, date: '2025-06-05', time: '09:00 AM', doctor: 'Dr. Ayesha Siddiqui', type: 'Eye Checkup',    notes: 'IOP: 18mmHg. Continue Timolol drops 0.5%. Review in 3 months.', paid: true,  amount: 2000 },
-  { id: 2, date: '2025-03-10', time: '10:30 AM', doctor: 'Dr. Ayesha Siddiqui', type: 'Follow-up',      notes: 'Stable. No progression. Patient compliant with medication.', paid: true,  amount: 1500 },
-  { id: 3, date: '2024-12-01', time: '09:30 AM', doctor: 'Dr. Ayesha Siddiqui', type: 'Initial Consult',notes: 'Diagnosed with primary open-angle glaucoma. Started Timolol 0.5%.', paid: true, amount: 3000 },
-  { id: 4, date: '2024-09-15', time: '11:00 AM', doctor: 'Dr. Imran Malik',     type: 'GP Checkup',     notes: 'BP: 130/85. Diet advice given. Follow up in 6 weeks.', paid: false, amount: 1200 },
-];
 
 export default function PatientProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const totalPaid = visits.filter(v => v.paid).reduce((s, v) => s + v.amount, 0);
+  const [patient, setPatient]           = useState(null);
+  const [appointments, setAppointments] = useState([]);
+  const [bills, setBills]               = useState([]);
+  const [loading, setLoading]           = useState(true);
+  const [tab, setTab]                   = useState('appointments');
+
+  useEffect(() => {
+    getPatientHistory(id)
+      .then(({ data }) => {
+        setPatient(data.patient);
+        setAppointments(data.appointments || []);
+        setBills(data.bills || []);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) return (
+    <Layout title="Patient Profile">
+      <div className="flex items-center justify-center py-24 gap-2">
+        <div className="h-5 w-5 rounded-full border-2 border-teal-500/30 border-t-teal-500 animate-spin" />
+        <span className="text-sm text-slate-400">Loading profile…</span>
+      </div>
+    </Layout>
+  );
+
+  if (!patient) return (
+    <Layout title="Patient Profile">
+      <div className="py-24 text-center">
+        <AlertCircle className="h-10 w-10 text-slate-300 mx-auto mb-3" />
+        <p className="text-sm text-slate-400 font-semibold">Patient not found</p>
+        <button onClick={() => navigate('/patients')}
+          className="mt-3 text-sm font-bold text-teal-600 hover:text-teal-700">← Go back</button>
+      </div>
+    </Layout>
+  );
+
+  const totalBilled = bills.reduce((s, b) => s + (b.totalAmount || 0), 0);
+  const totalPaid   = bills.filter(b => b.status === 'paid').reduce((s, b) => s + (b.totalAmount || 0), 0);
 
   return (
     <Layout title="Patient Profile" subtitle={patient.name}>
-      <button onClick={() => navigate(-1)} className="mb-6 flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors">
+
+      <button onClick={() => navigate('/patients')}
+        className="mb-5 flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-teal-600 transition-colors">
         <ChevronLeft className="h-4 w-4" /> Back to Patients
       </button>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-
-        {/* Left — Profile card */}
-        <div className="xl:col-span-1 space-y-5">
-
-          {/* Main card */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex flex-col items-center text-center mb-6">
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-teal-100 text-teal-700 text-2xl font-black mb-3">
-                {patient.name.split(' ').map(n => n[0]).join('')}
+      {/* Profile card */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mb-5">
+        <div className="flex flex-col sm:flex-row sm:items-start gap-5">
+          <div className="h-16 w-16 rounded-2xl bg-teal-100 text-teal-700 text-xl font-black flex items-center justify-center uppercase flex-shrink-0">
+            {patient.name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
+          </div>
+          <div className="flex-1">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+              <div>
+                <h2 className="text-xl font-black text-slate-900">{patient.name}</h2>
+                <span className={`inline-block mt-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
+                  patient.gender === 'Male' ? 'bg-blue-100 text-blue-700' : patient.gender === 'Female' ? 'bg-pink-100 text-pink-700' : 'bg-slate-100 text-slate-600'
+                }`}>
+                  {patient.gender}
+                </span>
               </div>
-              <h2 className="text-lg font-bold text-slate-900">{patient.name}</h2>
-              <p className="text-sm text-slate-500">{patient.age} years · {patient.gender}</p>
-              <span className="mt-2 rounded-full bg-teal-100 px-3 py-1 text-xs font-bold text-teal-700">Active Patient</span>
+              <button onClick={() => navigate('/appointments/new')}
+                className="flex items-center gap-2 self-start sm:self-auto rounded-xl bg-teal-600 px-4 py-2 text-sm font-bold text-white hover:bg-teal-700 transition-colors">
+                <CalendarDays className="h-4 w-4" /> Book Appointment
+              </button>
             </div>
 
-            <div className="space-y-3 border-t border-slate-100 pt-5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
-                { icon: Phone,    label: 'Phone',    value: patient.phone },
-                { icon: Calendar, label: 'Patient Since', value: patient.createdAt },
-                { icon: User,     label: 'Gender',   value: patient.gender },
+                { icon: Phone,    label: 'Phone',    value: patient.phone || '—' },
+                { icon: Calendar, label: 'DOB',      value: patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' }) : '—' },
+                { icon: User,     label: 'Address',  value: patient.address || '—' },
               ].map(({ icon: Icon, label, value }) => (
-                <div key={label} className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100">
-                    <Icon className="h-3.5 w-3.5 text-slate-500" />
-                  </div>
+                <div key={label} className="flex items-start gap-2.5 rounded-xl bg-slate-50 p-3">
+                  <Icon className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-                    <p className="text-sm font-semibold text-slate-800">{value}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
+                    <p className="text-sm text-slate-700 font-medium mt-0.5">{value}</p>
                   </div>
                 </div>
               ))}
             </div>
 
-            <button className="mt-5 w-full flex items-center justify-center gap-2 rounded-xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
-              <Edit2 className="h-3.5 w-3.5" /> Edit Profile
-            </button>
-          </div>
-
-          {/* Medical history */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-slate-900">Medical History</h3>
-              <button className="text-xs font-semibold text-teal-600 hover:text-teal-700">Edit</button>
-            </div>
-            <p className="text-sm text-slate-600 leading-relaxed">{patient.medicalHistory}</p>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-2xl border border-teal-100 bg-teal-50 p-4 text-center">
-              <p className="text-2xl font-black text-teal-700">{visits.length}</p>
-              <p className="text-xs font-medium text-slate-500 mt-1">Total Visits</p>
-            </div>
-            <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-center">
-              <p className="text-lg font-black text-emerald-700">PKR {(totalPaid/1000).toFixed(1)}K</p>
-              <p className="text-xs font-medium text-slate-500 mt-1">Total Paid</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Right — Visit history */}
-        <div className="xl:col-span-2 space-y-5">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-900">Visit History</h2>
-            <button onClick={() => navigate('/appointments/new')}
-              className="flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-teal-700 transition-colors">
-              <Plus className="h-3.5 w-3.5" /> Book Appointment
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            {visits.map((visit, idx) => (
-              <div key={visit.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="text-sm font-bold text-slate-900">{visit.type}</p>
-                    <div className="flex items-center gap-3 mt-1">
-                      <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                        <Calendar className="h-3.5 w-3.5" />
-                        {visit.date}
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                        <Clock className="h-3.5 w-3.5" />
-                        {visit.time}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-slate-900">PKR {visit.amount.toLocaleString()}</p>
-                    <span className={`text-[10px] font-bold ${visit.paid ? 'text-emerald-600' : 'text-red-500'}`}>
-                      {visit.paid ? '✓ Paid' : '✗ Unpaid'}
-                    </span>
-                  </div>
+            {patient.medicalHistory && (
+              <div className="mt-3 flex items-start gap-2.5 rounded-xl bg-amber-50 border border-amber-100 p-3">
+                <FileText className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600">Medical History</p>
+                  <p className="text-sm text-amber-800 mt-0.5">{patient.medicalHistory}</p>
                 </div>
-                <p className="text-xs font-semibold text-teal-700 mb-2">{visit.doctor}</p>
-                <div className="rounded-lg bg-slate-50 border border-slate-100 px-4 py-3">
-                  <div className="flex items-start gap-2">
-                    <FileText className="h-3.5 w-3.5 text-slate-400 mt-0.5 flex-shrink-0" />
-                    <p className="text-xs text-slate-600 leading-relaxed">{visit.notes}</p>
-                  </div>
-                </div>
-                {idx === 0 && (
-                  <div className="mt-3 flex items-center gap-2">
-                    <span className="rounded-full bg-teal-100 px-2.5 py-0.5 text-[10px] font-bold text-teal-700">Latest Visit</span>
-                  </div>
-                )}
               </div>
-            ))}
+            )}
           </div>
         </div>
+      </div>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-3 gap-4 mb-5">
+        {[
+          { label: 'Appointments', value: appointments.length, icon: CalendarDays, color: 'text-teal-600', bg: 'bg-teal-50' },
+          { label: 'Total Billed',  value: `Rs ${totalBilled.toLocaleString()}`, icon: Receipt, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+          { label: 'Total Paid',    value: `Rs ${totalPaid.toLocaleString()}`,   icon: Receipt, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+        ].map(({ label, value, icon: Icon, color, bg }) => (
+          <div key={label} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 text-center">
+            <div className={`h-8 w-8 rounded-lg ${bg} flex items-center justify-center mx-auto mb-2`}>
+              <Icon className={`h-4 w-4 ${color}`} />
+            </div>
+            <p className="text-lg font-black text-slate-900">{value}</p>
+            <p className="text-[11px] text-slate-400 font-semibold mt-0.5">{label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Tabs */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="flex border-b border-slate-100">
+          {[
+            { key: 'appointments', label: 'Appointments', count: appointments.length },
+            { key: 'billing',      label: 'Billing',      count: bills.length },
+          ].map(t => (
+            <button key={t.key} onClick={() => setTab(t.key)}
+              className={`flex items-center gap-2 px-5 py-3.5 text-sm font-bold transition-colors ${
+                tab === t.key
+                  ? 'text-teal-600 border-b-2 border-teal-600'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}>
+              {t.label}
+              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${tab === t.key ? 'bg-teal-100 text-teal-700' : 'bg-slate-100 text-slate-500'}`}>
+                {t.count}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {tab === 'appointments' && (
+          appointments.length === 0 ? (
+            <div className="py-16 text-center">
+              <CalendarDays className="h-9 w-9 text-slate-200 mx-auto mb-2" />
+              <p className="text-sm text-slate-400 font-semibold">No appointments yet</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-50">
+              {appointments.map(a => (
+                <div key={a._id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-slate-50/60 transition-colors">
+                  <div className="flex items-center gap-1.5 text-sm text-slate-500 w-28 flex-shrink-0">
+                    <Clock className="h-3.5 w-3.5" /> {a.timeSlot}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-700 truncate">{a.notes || 'General consultation'}</p>
+                    <p className="text-[11px] text-slate-400">
+                      {a.date ? new Date(a.date).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                    </p>
+                  </div>
+                  <span className={`flex-shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold capitalize ${statusStyle[a.status] || statusStyle.scheduled}`}>
+                    {a.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )
+        )}
+
+        {tab === 'billing' && (
+          bills.length === 0 ? (
+            <div className="py-16 text-center">
+              <Receipt className="h-9 w-9 text-slate-200 mx-auto mb-2" />
+              <p className="text-sm text-slate-400 font-semibold">No billing records</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-50">
+              {bills.map(b => (
+                <div key={b._id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-slate-50/60 transition-colors">
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-slate-900">{b.description || 'Consultation fee'}</p>
+                    <p className="text-[11px] text-slate-400">
+                      {b.date ? new Date(b.date).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                    </p>
+                  </div>
+                  <p className="font-bold text-slate-900">Rs {(b.totalAmount || 0).toLocaleString()}</p>
+                  <span className={`flex-shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${b.status === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                    {b.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )
+        )}
       </div>
     </Layout>
   );

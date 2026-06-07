@@ -15,7 +15,7 @@ const appointmentSchema = new mongoose.Schema({
     hours24: { type: Boolean, default: false },
     hours2: { type: Boolean, default: false },
   },
-  createdBy: { type: String, enum: ['patient', 'receptionist'], default: 'receptionist' },
+  createdBy: { type: String, enum: ['patient', 'receptionist', 'admin'], default: 'receptionist' },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Appointment', appointmentSchema);

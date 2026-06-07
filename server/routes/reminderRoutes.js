@@ -51,4 +51,25 @@ router.post('/send/:id', protect, asyncHandler(async (req, res) => {
   }
 }));
 
+// @route  POST /api/reminders/test-whatsapp
+// @desc   Send a test WhatsApp message to a given number (Admin only)
+// @access Private / Admin
+router.post('/test-whatsapp', protect, adminOnly, asyncHandler(async (req, res) => {
+  const { phone } = req.body;
+  if (!phone) { res.status(400); throw new Error('Phone number is required'); }
+
+  const { isWhatsAppEnabled } = require('../utils/sendWhatsApp');
+  if (!isWhatsAppEnabled()) {
+    res.status(400);
+    throw new Error('WhatsApp is not configured. Check META_WA_TOKEN and META_WA_PHONE_ID in .env');
+  }
+
+  await sendWhatsApp(
+    phone,
+    `🎉 *ClinicPulse Test Message*\n\nHello! This is a test message from your ClinicPulse clinic management system.\n\nWhatsApp integration is working correctly! ✅\n\n_Sent at ${new Date().toLocaleString('en-PK')}_`
+  );
+
+  res.json({ success: true, message: `Test WhatsApp sent to ${phone} ✅` });
+}));
+
 module.exports = router;

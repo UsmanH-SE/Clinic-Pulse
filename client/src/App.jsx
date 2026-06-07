@@ -5,6 +5,7 @@ import ProtectedRoute from './components/common/ProtectedRoute';
 
 // Pages - Auth
 import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/auth/RegisterPage';
 
 // Pages - Dashboard
 import Dashboard from './pages/dashboard/Dashboard';
@@ -24,6 +25,9 @@ import BillingList from './pages/billing/BillingList';
 // Pages - Analytics (Admin only)
 import AnalyticsDashboard from './pages/analytics/AnalyticsDashboard';
 
+// Pages - Settings
+import StaffManagement from './pages/settings/StaffManagement';
+
 // Pages - Public
 import BookingPortal from './pages/booking/BookingPortal';
 
@@ -36,6 +40,7 @@ function App() {
           {/* Public Routes */}
           <Route path="/book" element={<BookingPortal />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
 
           {/* Protected Staff Routes */}
           <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -48,6 +53,7 @@ function App() {
 
           {/* Admin Only Routes */}
           <Route path="/analytics" element={<ProtectedRoute adminOnly><AnalyticsDashboard /></ProtectedRoute>} />
+          <Route path="/staff" element={<ProtectedRoute adminOnly><StaffManagement /></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
