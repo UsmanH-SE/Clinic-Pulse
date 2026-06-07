@@ -30,6 +30,7 @@ import StaffManagement from './pages/settings/StaffManagement';
 
 // Pages - Public
 import BookingPortal from './pages/booking/BookingPortal';
+import LandingPage from './pages/landing/LandingPage';
 
 function App() {
   return (
@@ -38,12 +39,13 @@ function App() {
         <Toaster position="top-right" />
         <Routes>
           {/* Public Routes */}
+          <Route path="/" element={<LandingPage />} />
           <Route path="/book" element={<BookingPortal />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
 
           {/* Protected Staff Routes */}
-          <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/appointments" element={<ProtectedRoute><AppointmentsList /></ProtectedRoute>} />
           <Route path="/appointments/new" element={<ProtectedRoute><NewAppointment /></ProtectedRoute>} />
           <Route path="/patients" element={<ProtectedRoute><PatientsList /></ProtectedRoute>} />
@@ -55,7 +57,7 @@ function App() {
           <Route path="/analytics" element={<ProtectedRoute adminOnly><AnalyticsDashboard /></ProtectedRoute>} />
           <Route path="/staff" element={<ProtectedRoute adminOnly><StaffManagement /></ProtectedRoute>} />
 
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </Router>
     </AuthProvider>

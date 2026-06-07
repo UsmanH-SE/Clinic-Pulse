@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 
 const navItems = [
-  { to: '/',           icon: LayoutDashboard, label: 'Dashboard',      roles: ['admin', 'receptionist'] },
+  { to: '/dashboard',  icon: LayoutDashboard, label: 'Dashboard',      roles: ['admin', 'receptionist'] },
   { to: '/appointments', icon: CalendarDays,  label: 'Appointments',   roles: ['admin', 'receptionist'] },
   { to: '/patients',   icon: Users,           label: 'Patients',       roles: ['admin', 'receptionist'] },
   { to: '/billing',    icon: Receipt,         label: 'Billing',        roles: ['admin', 'receptionist'] },
@@ -51,7 +51,7 @@ export default function Sidebar() {
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         <p className="px-3 mb-3 text-[9px] font-bold uppercase tracking-widest text-slate-600">Menu</p>
         {filtered.map(({ to, icon: Icon, label }) => (
-          <NavLink key={to} to={to} end={to === '/'}
+          <NavLink key={to} to={to} end={to === '/dashboard'}
             onClick={() => setOpen(false)}
             className={({ isActive }) =>
               `group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-all duration-150 ${
