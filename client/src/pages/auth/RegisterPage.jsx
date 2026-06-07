@@ -97,7 +97,7 @@ export default function RegisterPage() {
                   type="text"
                   value={clinicName}
                   onChange={e => setClinicName(e.target.value)}
-                  placeholder="e.g. Vision Care Clinic"
+                  placeholder=""
                   className={inputCls}
                 />
               </div>
@@ -110,7 +110,7 @@ export default function RegisterPage() {
                   type="text"
                   value={clinicPhone}
                   onChange={e => setClinicPhone(e.target.value)}
-                  placeholder="03XX XXXXXXX"
+                  placeholder=""
                   className={inputCls}
                 />
               </div>
@@ -138,7 +138,7 @@ export default function RegisterPage() {
                   value={clinicAddress}
                   onChange={e => setClinicAddress(e.target.value)}
                   rows={2}
-                  placeholder="e.g. Shop 5, F-7 Markaz, Islamabad"
+                  placeholder=""
                   className={`${inputCls} resize-none`}
                 />
               </div>
@@ -168,7 +168,7 @@ export default function RegisterPage() {
                   type="text"
                   value={name}
                   onChange={e => setName(e.target.value)}
-                  placeholder="e.g. Dr. Ahmed Ali"
+                  placeholder=""
                   className={inputCls}
                 />
               </div>
@@ -181,7 +181,7 @@ export default function RegisterPage() {
                   type="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  placeholder="doctor@clinic.com"
+                  placeholder=""
                   className={inputCls}
                 />
               </div>
@@ -195,7 +195,7 @@ export default function RegisterPage() {
                     type={showPw ? 'text' : 'password'}
                     value={password}
                     onChange={e => setPassword(e.target.value)}
-                    placeholder="Min 6 characters"
+                    placeholder=""
                     className={`${inputCls} pr-11`}
                   />
                   <button

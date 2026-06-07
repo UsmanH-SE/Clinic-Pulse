@@ -105,7 +105,7 @@ export default function LoginPage() {
                 type="email"
                 value={form.email}
                 onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
-                placeholder="doctor@clinic.com"
+                placeholder=""
                 autoComplete="email"
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition-all duration-150 focus:border-teal-500 focus:shadow-none focus:ring-3 focus:ring-teal-500/10"
               />
@@ -121,7 +121,7 @@ export default function LoginPage() {
                   type={showPw ? 'text' : 'password'}
                   value={form.password}
                   onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
-                  placeholder="••••••••"
+                  placeholder=""
                   autoComplete="current-password"
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pr-12 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition-all duration-150 focus:border-teal-500 focus:shadow-none focus:ring-3 focus:ring-teal-500/10"
                 />

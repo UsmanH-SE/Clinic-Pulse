@@ -56,7 +56,7 @@ export default function Dashboard() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <p className="text-lg font-bold text-slate-900">
-            Good {greeting}, {user?.name?.split(' ')[0]} 👋
+            Good {greeting}, {user?.name?.split(' ')[0]} 
           </p>
           <p className="text-sm text-slate-500 mt-0.5">
             {user?.clinicName} — here's today's overview

@@ -131,7 +131,7 @@ export default function LandingPage() {
 
           {/* Sub */}
           <p className="text-base sm:text-lg text-slate-300 max-w-xl mx-auto mb-8 sm:mb-10 leading-relaxed px-2">
-            ClinicPulse handles appointments, patients, billing and WhatsApp reminders — so you can focus on your patients.
+            ClinicPulse handles appointments, patients, billing and WhatsApp reminders.so you can focus on your patients.
           </p>
 
           {/* CTA buttons */}
@@ -268,10 +268,10 @@ export default function LandingPage() {
       <section className="py-16 sm:py-20 px-4 sm:px-6 bg-gradient-to-br from-teal-600 to-teal-700">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white mb-4 leading-tight">
-            Ready to modernise<br className="hidden sm:block" /> your clinic?
+            Ready to automate<br className="hidden sm:block" /> your clinic?
           </h2>
           <p className="text-teal-100 mb-8 text-sm sm:text-base leading-relaxed max-w-md mx-auto">
-            Join clinics across Pakistan using ClinicPulse to manage patients, appointments, and billing — completely free.
+            Join clinics across Pakistan using ClinicPulse to manage patients, appointments, and billing completely free.
           </p>
           <button onClick={() => navigate('/register')}
             className="inline-flex items-center gap-2 rounded-xl bg-white px-7 py-4 text-sm sm:text-base font-bold text-teal-700 hover:bg-teal-50 transition-all active:scale-[0.98] shadow-lg w-full sm:w-auto justify-center">
