@@ -35,8 +35,12 @@ app.get('/', (req, res) => res.json({ message: 'ClinicPulse API is running ✅',
 app.use(notFound);
 app.use(errorHandler);
 
-// Start cron job for reminders
-startReminderJob();
+// Only start cron job + listen when running locally (not on Vercel serverless)
+if (process.env.NODE_ENV !== 'production') {
+  startReminderJob();
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT} [${process.env.NODE_ENV}]`));
+}
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT} [${process.env.NODE_ENV}]`));
+// Export for Vercel serverless
+module.exports = app;
