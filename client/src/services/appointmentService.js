@@ -7,4 +7,4 @@ export const updateStatusAPI       = (id, data) => api.put(`/appointments/${id}/
 export const deleteAppointmentAPI  = (id)     => api.delete(`/appointments/${id}`);
 
 export const getClinicAPI          = ()       => api.get('/clinic');
-export const getSlotsAPI           = (date)   => api.get(`/clinic/slots/${date}`);
+export const getSlotsAPI           = (date)   => api.get('/appointments/slots', { params: { date } });

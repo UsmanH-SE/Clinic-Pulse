@@ -38,6 +38,42 @@ const getTodayAppointments = asyncHandler(async (req, res) => {
   res.json({ success: true, date: today, count: appointments.length, appointments });
 });
 
+// @route  GET /api/appointments/slots?date=YYYY-MM-DD
+// @desc   Get available time slots for a date
+// @access Private
+const getSlots = asyncHandler(async (req, res) => {
+  const { date } = req.query;
+  if (!date) { res.status(400); throw new Error('Date is required'); }
+
+  // All possible clinic slots (9am – 8pm, every 30 minutes)
+  const allSlots = [
+    '09:00 AM', '09:30 AM',
+    '10:00 AM', '10:30 AM',
+    '11:00 AM', '11:30 AM',
+    '12:00 PM', '12:30 PM',
+    '01:00 PM', '01:30 PM',
+    '02:00 PM', '02:30 PM',
+    '03:00 PM', '03:30 PM',
+    '04:00 PM', '04:30 PM',
+    '05:00 PM', '05:30 PM',
+    '06:00 PM', '06:30 PM',
+    '07:00 PM', '07:30 PM',
+    '08:00 PM',
+  ];
+
+  // Find already-booked slots for this clinic on this date
+  const booked = await Appointment.find({
+    clinicId: req.user.clinicId,
+    date,
+    status: { $in: ['scheduled', 'confirmed'] },
+  }).select('timeSlot');
+
+  const bookedSlots = booked.map(a => a.timeSlot);
+  const availableSlots = allSlots.filter(s => !bookedSlots.includes(s));
+
+  res.json({ success: true, date, availableSlots, bookedSlots });
+});
+
 // @route  POST /api/appointments/book
 // @desc   Book a new appointment
 // @access Private (staff) or patient (public)
@@ -173,4 +209,4 @@ const handleWhatsAppReply = asyncHandler(async (req, res) => {
   res.sendStatus(200);
 });
 
-module.exports = { getAppointments, getTodayAppointments, bookAppointment, updateStatus, deleteAppointment, handleWhatsAppReply };
+module.exports = { getAppointments, getTodayAppointments, getSlots, bookAppointment, updateStatus, deleteAppointment, handleWhatsAppReply };
