@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Activity, CalendarDays, Users, Receipt, BarChart3,
   MessageCircle, CheckCircle2, ArrowRight, Star, Shield,
-  Smartphone, Clock, Menu, X, ChevronDown,
+  Smartphone, Clock, Menu, X, Search,
 } from 'lucide-react';
 
 /* ─── Data ──────────────────────────────────────────────────────────── */
@@ -66,6 +66,10 @@ export default function LandingPage() {
 
             {/* Desktop CTA */}
             <div className="hidden md:flex items-center gap-3">
+              <button onClick={() => navigate('/book')}
+                className="flex items-center gap-1.5 rounded-xl border border-teal-200 bg-teal-50 px-4 py-2.5 text-sm font-bold text-teal-700 hover:bg-teal-100 transition-colors active:scale-[0.98]">
+                <Search className="h-3.5 w-3.5" /> Book Appointment
+              </button>
               <button onClick={() => navigate('/login')}
                 className="text-sm font-semibold text-slate-600 hover:text-teal-600 transition-colors px-3 py-2">
                 Sign In
@@ -94,6 +98,10 @@ export default function LandingPage() {
               </a>
             ))}
             <div className="pt-3 space-y-2 border-t border-slate-100 mt-3">
+              <button onClick={() => { setOpen(false); navigate('/book'); }}
+                className="w-full flex items-center justify-center gap-2 rounded-xl border border-teal-200 bg-teal-50 py-3 text-sm font-bold text-teal-700 hover:bg-teal-100 transition-colors">
+                <Search className="h-4 w-4" /> Book Appointment (Patient)
+              </button>
               <button onClick={() => navigate('/login')}
                 className="w-full rounded-xl border border-slate-200 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors">
                 Sign In
@@ -172,6 +180,50 @@ export default function LandingPage() {
                 <p className="text-xs sm:text-sm font-medium text-slate-500 mt-1">{label}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══ PATIENT BOOKING CTA ═════════════════════════════════════════ */}
+      <section id="book" className="py-12 sm:py-16 px-4 sm:px-6 lg:px-8 bg-white">
+        <div className="mx-auto max-w-3xl">
+          <div className="rounded-3xl border-2 border-teal-100 bg-gradient-to-br from-teal-50 to-white p-7 sm:p-10 text-center shadow-sm">
+
+            <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-600 mb-5 shadow-lg shadow-teal-200">
+              <CalendarDays className="h-7 w-7 text-white" />
+            </div>
+
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-3 leading-tight">
+              Are you a patient?<br className="hidden sm:block" />
+              <span className="text-teal-600"> Book your appointment online</span>
+            </h2>
+            <p className="text-sm sm:text-base text-slate-500 max-w-md mx-auto mb-6 leading-relaxed">
+              Search for your clinic, pick a date and time that suits you, and confirm your appointment — all in under 1 minute. No phone calls needed.
+            </p>
+
+            {/* How it works — 3 quick steps */}
+            <div className="grid grid-cols-3 gap-3 mb-7 max-w-sm mx-auto sm:max-w-md">
+              {[
+                { n: '1', label: 'Search your clinic' },
+                { n: '2', label: 'Pick date & time'   },
+                { n: '3', label: 'Confirm & done'     },
+              ].map(({ n, label }) => (
+                <div key={n} className="flex flex-col items-center gap-1.5">
+                  <div className="h-9 w-9 rounded-full bg-teal-600 text-white text-sm font-black flex items-center justify-center flex-shrink-0">
+                    {n}
+                  </div>
+                  <p className="text-[11px] sm:text-xs font-semibold text-slate-600 text-center leading-tight">{label}</p>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() => navigate('/book')}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-8 py-4 text-sm sm:text-base font-bold text-white hover:bg-teal-700 transition-all active:scale-[0.98] shadow-md shadow-teal-200 w-full sm:w-auto"
+            >
+              <Search className="h-4 w-4 flex-shrink-0" /> Search Clinic &amp; Book Free
+            </button>
+            <p className="text-xs text-slate-400 mt-3">No registration required · Instant confirmation</p>
           </div>
         </div>
       </section>
@@ -303,6 +355,10 @@ export default function LandingPage() {
 
             {/* Links */}
             <div className="flex items-center gap-5">
+              <button onClick={() => navigate('/book')}
+                className="text-xs font-semibold text-teal-600 hover:text-teal-700 transition-colors">
+                Book Appointment
+              </button>
               <button onClick={() => navigate('/login')}
                 className="text-xs font-semibold text-slate-500 hover:text-teal-600 transition-colors">
                 Sign In

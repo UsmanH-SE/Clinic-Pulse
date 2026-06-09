@@ -27,6 +27,7 @@ app.use('/api/appointments', require('./routes/appointmentRoutes'));
 app.use('/api/billing',      require('./routes/billingRoutes'));
 app.use('/api/analytics',    require('./routes/analyticsRoutes'));
 app.use('/api/reminders',    require('./routes/reminderRoutes'));
+app.use('/api/public',       require('./routes/publicRoutes'));   // No-auth patient booking
 
 // Health check
 app.get('/', (req, res) => res.json({ message: 'ClinicPulse API is running ✅', version: '1.0.0' }));

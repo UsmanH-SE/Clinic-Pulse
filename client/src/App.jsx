@@ -41,6 +41,7 @@ function App() {
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/book" element={<BookingPortal />} />
+          <Route path="/book/:clinicId" element={<BookingPortal />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
 
